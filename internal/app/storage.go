@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"go-dfs/internal/defines"
 	"go-dfs/internal/pkg"
 	"go-dfs/internal/schema"
 	"io"
@@ -44,8 +45,6 @@ func (s *Storage) Start(serverConfig pkg.DsfConfigType) {
 	router.Static("", s.ServerConfig.Storage.StoragePath)
 	// upload file handler
 	router.POST("/upload", s.Upload)
-	// delete file handler
-	router.POST("/delete", s.Delete)
 	// sync file handler
 	router.POST("/sync-file", s.SyncFile)
 	// start storage time task
@@ -103,38 +102,54 @@ func (s *Storage) Delete(c *gin.Context) {
 func (s *Storage) SyncFile(c *gin.Context) {
 	var syncFileInfo schema.SyncFileInfo
 	c.ShouldBind(&syncFileInfo)
-
-	// Check if the file path exists
-	// if does not exist , auto create
-	baseDir := s.ServerConfig.Storage.StoragePath + syncFileInfo.FilePath
-	_, err := os.Stat(baseDir)
-	if err != nil {
-		err = os.MkdirAll(baseDir, os.ModePerm)
+	if syncFileInfo.Action == defines.FileSyncActionAdd {
+		// Check if the file path exists
+		// if does not exist , auto create
+		baseDir := s.ServerConfig.Storage.StoragePath + syncFileInfo.FilePath
+		_, err := os.Stat(baseDir)
 		if err != nil {
-			s.ReportErrorMsg("when sync file,create root dir error")
+			err = os.MkdirAll(baseDir, os.ModePerm)
+			if err != nil {
+				s.ReportErrorMsg("when sync file,create root dir error")
+				pkg.Helper{}.AjaxReturn(c, 1, "")
+				return
+			}
+		}
+		// download the file
+		res, err := http.Get(syncFileInfo.SrcScheme +
+			"://" + syncFileInfo.SrcHost +
+			syncFileInfo.FilePath + "/" + syncFileInfo.FileName)
+		if err != nil {
 			pkg.Helper{}.AjaxReturn(c, 1, "")
+		}
+		f, err := os.Create(baseDir + "/" + syncFileInfo.FileName)
+		if err != nil {
+			s.ReportErrorMsg("when sync file,create file error")
+			pkg.Helper{}.AjaxReturn(c, 1, "")
+		}
+		l, err := io.Copy(f, res.Body)
+		if err != nil || l == 0 {
+			s.ReportErrorMsg("when sync file,copy file error")
+			pkg.Helper{}.AjaxReturn(c, 1, "")
+		}
+		pkg.Helper{}.AjaxReturn(c, 0, "")
+		return
+	} else if syncFileInfo.Action == defines.FileSyncActionDelete {
+		fullpath := s.ServerConfig.Storage.StoragePath + "/" + syncFileInfo.FilePath + "/" + syncFileInfo.FileName
+		_, err := os.Stat(fullpath)
+		if err != nil {
+			pkg.Helper{}.AjaxReturn(c, 0, "")
 			return
 		}
-	}
+		err = os.Remove(fullpath)
+		if err != nil {
+			pkg.Helper{}.AjaxReturn(c, 300005, "")
+			return
+		}
+		pkg.Helper{}.AjaxReturn(c, 0, "")
+		return
 
-	// download the file
-	res, err := http.Get(syncFileInfo.SrcScheme +
-		"://" + syncFileInfo.SrcHost +
-		syncFileInfo.FilePath + "/" + syncFileInfo.FileName)
-	if err != nil {
-		pkg.Helper{}.AjaxReturn(c, 1, "")
 	}
-	f, err := os.Create(baseDir + "/" + syncFileInfo.FileName)
-	if err != nil {
-		s.ReportErrorMsg("when sync file,create file error")
-		pkg.Helper{}.AjaxReturn(c, 1, "")
-	}
-	l, err := io.Copy(f, res.Body)
-	if err != nil || l == 0 {
-		s.ReportErrorMsg("when sync file,copy file error")
-		pkg.Helper{}.AjaxReturn(c, 1, "")
-	}
-	pkg.Helper{}.AjaxReturn(c, 0, "")
 }
 
 // StartStorageCron storage crontab

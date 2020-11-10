@@ -61,7 +61,7 @@ func (t *Tracker) Start(serverConfig pkg.DsfConfigType) {
 	router := gin.Default()
 	router.Use(t.Download())
 	router.POST("/upload", t.Upload)
-	router.DELETE("/", t.Delete)
+	router.POST("/delete", t.Delete)
 	router.POST("/report-status", t.HanldeStorageServerReport)
 	router.POST("/report-err", t.HandleReportErrorMsg)
 
@@ -187,7 +187,12 @@ func (t *Tracker) Delete(c *gin.Context) {
 		FileName string `json:"file_name"`
 	}
 	c.ShouldBind(&DelInfo)
-	g := strings.Split(DelInfo.FileName, "/")[0]
+	g := ""
+	f := strings.Split(DelInfo.FileName, "/")
+	g = f[0]
+	if g == "" {
+		g = f[1]
+	}
 	if g == "" {
 		pkg.Helper{}.AjaxReturn(c, 300004, "")
 		return
@@ -213,7 +218,7 @@ func (t *Tracker) Delete(c *gin.Context) {
 			Group:    s.Group,
 		}
 		ldbData, _ := json.Marshal(syncFileInfo)
-		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.Host, syncFileInfo, nil, 10*time.Second)
+		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.Host+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
 			// 写入日志，定时继续同步
 			leveldb.Do(DelInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
