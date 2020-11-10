@@ -1,6 +1,6 @@
 package schema
 
-// FileList , file list
-type FileList struct {
+// FileInfo , file list
+type FileInfo struct {
 	Size uint64 `json:"size"`
 }

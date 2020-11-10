@@ -75,7 +75,7 @@ func (t *Tracker) Download() gin.HandlerFunc {
 			matched, _ := regexp.MatchString("^/group", c.Request.RequestURI)
 			if matched {
 				// 选择合适的group
-				g := strings.Split(c.Request.RequestURI, "/")[0]
+				g := strings.Split(c.Request.RequestURI, "/")[1]
 				if g == "" {
 					pkg.Helper{}.AjaxReturn(c, 300004, "")
 					return
@@ -122,8 +122,11 @@ func (t *Tracker) Upload(c *gin.Context) {
 		goDfsExt := c.Writer.Header().Get("Go-Dfs-Ext")
 		// recode file list db
 		leveldb, err := pkg.NewLDB(defines.FileListDb)
-		if err != nil {
-			leveldb.Do(goDfsFilepath + "/" + goDfsFilename + goDfsExt)
+		if err == nil {
+			fileInfo := schema.FileInfo{}
+			fileInfo.Size, _ = strconv.ParseUint(c.Writer.Header().Get("Go-Dfs-Size"), 10, 64)
+			ldata, _ := json.Marshal(fileInfo)
+			leveldb.Do(goDfsFilepath+"/"+goDfsFilename+goDfsExt, ldata)
 		}
 		StorageServers := t.GetStorages(group)
 		for _, sm := range StorageServers {
@@ -206,7 +209,7 @@ func (t *Tracker) Delete(c *gin.Context) {
 	leveldb, err := pkg.NewLDB(defines.FileSyncLogDb)
 	// delete the file record from file list db
 	leveldb1, err1 := pkg.NewLDB(defines.FileListDb)
-	if err1 != nil {
+	if err1 == nil {
 		leveldb1.Do(DelInfo.FileName, nil)
 	}
 	for _, s := range group.StorageServers {
@@ -220,7 +223,6 @@ func (t *Tracker) Delete(c *gin.Context) {
 		ldbData, _ := json.Marshal(syncFileInfo)
 		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.Host+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
-			// 写入日志，定时继续同步
 			leveldb.Do(DelInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
@@ -361,14 +363,18 @@ func (t *Tracker) StartTrackerCron() {
 			// save the group info into the leveldb
 			ldb, err := pkg.NewLDB(defines.StorageGroupDb)
 			if err != nil {
-				ldbData, _ := json.Marshal(g)
-				ldb.Do(g.Name, ldbData)
+				return
 			}
+			ldbData, _ := json.Marshal(g)
+			ldb.Do(g.Name, ldbData)
 		}
 	})
 	// 文件同步补偿
 	cr.AddFunc("* * */2 * * *", func() {
-		ldb, _ := pkg.NewLDB(defines.FileSyncLogDb)
+		ldb, err := pkg.NewLDB(defines.FileSyncLogDb)
+		if err != nil {
+			return
+		}
 		iter := ldb.Db().NewIterator(nil, nil)
 		for iter.Next() {
 			v := iter.Value()

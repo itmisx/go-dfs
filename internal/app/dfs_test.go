@@ -52,27 +52,24 @@ func TestUUID(t *testing.T) {
 	}
 }
 
-func TestFunc(*testing.T) {
-	leveldb, err := pkg.NewLDB(defines.FileSyncLogDb)
+func TestLevelDb(*testing.T) {
+	leveldb, err := pkg.NewLDB(defines.FileListDb)
 	if err != nil {
 		return
 	}
-	leveldb.Do("abc", []byte("abcd"))
-	leveldb.Do("abcd", []byte("abcd1"))
-	leveldb.Do("abcde", []byte("abcd1"))
-	leveldb.Do("abcdef", []byte("abcdef"))
 	iter := leveldb.Db().NewIterator(nil, nil)
-	// for ok := iter.Seek([]byte("abcd")); ok; ok = iter.Next() {
-	// 	fmt.Printf("%s:%s\n", iter.Key(), iter.Value())
-	// }
 	for iter.Next() {
-		fmt.Printf("%s:%s\n", iter.Key(), iter.Value())
+		fmt.Printf("%s\n", iter.Key())
 	}
 	iter.Release()
+	iter1 := leveldb.Db().NewIterator(nil, nil)
+	for iter1.Next() {
+		fmt.Printf("%s\n", iter1.Key())
+	}
 }
 
 func TestDiskUsage(t *testing.T) {
-	path := "./dfs1"
+	path := "./dfs"
 	if runtime.GOOS == "windows" {
 		path = "C:"
 	}
@@ -84,11 +81,4 @@ func TestDiskUsage(t *testing.T) {
 		t.Errorf("error %v", err)
 	}
 	fmt.Printf("%+v", v)
-}
-
-func TestChan(*testing.T) {
-	c := make(chan int, 1)
-	c <- 1
-	<-c
-	fmt.Println("pass")
 }
