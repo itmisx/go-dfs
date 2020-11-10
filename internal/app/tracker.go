@@ -55,13 +55,16 @@ func NewTracker() *Tracker {
 // Start , 启动tracker
 func (t *Tracker) Start(serverConfig pkg.DsfConfigType) {
 	t.ServerConfig = serverConfig
+	// start tracker crontab
+	t.StartTrackerCron()
 	// gin init
 	router := gin.Default()
-	// router.Use(t.Download())
+	router.Use(t.Download())
 	router.POST("/upload", t.Upload)
 	router.DELETE("/", t.Delete)
 	router.POST("/report-status", t.HanldeStorageServerReport)
 	router.POST("/report-err", t.HandleReportErrorMsg)
+
 	router.Run(":" + t.ServerConfig.HTTPPort)
 }
 
