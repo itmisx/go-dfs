@@ -18,7 +18,7 @@ func TestTracker(t *testing.T) {
 		DefaultLang: "zh_cn",
 	}
 	config1.Tracker.NodeID = 1
-	Start(&config1)
+	go Start(&config1)
 	// 启动storage
 	config2 := pkg.DsfConfigType{
 		ServerType:  "storage",
@@ -27,7 +27,7 @@ func TestTracker(t *testing.T) {
 	}
 	config2.Storage.HTTPScheme = "http"
 	config2.Storage.Group = "group1"
-	config2.Storage.StoragePath = "./dfs1"
+	config2.Storage.StoragePath = "./dfs/1"
 	config2.Storage.TrackerServers = []string{"http://127.0.0.1:9000"}
 	go Start(&config2)
 
@@ -39,7 +39,7 @@ func TestTracker(t *testing.T) {
 	}
 	config3.Storage.HTTPScheme = "http"
 	config3.Storage.Group = "group1"
-	config3.Storage.StoragePath = "./dfs2"
+	config3.Storage.StoragePath = "./dfs/2"
 	config3.Storage.TrackerServers = []string{"http://127.0.0.1:9000"}
 	go Start(&config3)
 

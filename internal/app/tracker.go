@@ -117,6 +117,11 @@ func (t *Tracker) Upload(c *gin.Context) {
 	if c.Writer.Header().Get("Go-Dfs-Upload-Result") == "1" {
 		// get the file ext
 		goDfsExt := c.Writer.Header().Get("Go-Dfs-Ext")
+		// recode file list db
+		leveldb, err := pkg.NewLDB(defines.FileListDb)
+		if err != nil {
+			leveldb.Do(goDfsFilepath + "/" + goDfsFilename + goDfsExt)
+		}
 		StorageServers := t.GetStorages(group)
 		for _, sm := range StorageServers {
 			if sm.Host == validStorageServer.Host {
@@ -189,7 +194,13 @@ func (t *Tracker) Delete(c *gin.Context) {
 		pkg.Helper{}.AjaxReturn(c, 300004, "")
 		return
 	}
+	// delete file from everyone storage server of the group
 	leveldb, err := pkg.NewLDB(defines.FileSyncLogDb)
+	// delete the file record from file list db
+	leveldb1, err1 := pkg.NewLDB(defines.FileListDb)
+	if err1 != nil {
+		leveldb1.Do(DelInfo.FileName, nil)
+	}
 	for _, s := range group.StorageServers {
 		syncFileInfo := schema.SyncFileInfo{
 			DstScheme: s.Scheme, DstHost: s.Host,
@@ -249,7 +260,7 @@ func (t *Tracker) HanldeStorageServerReport(c *gin.Context) {
 		return
 	}
 	g, err := leveldb.Do(storageServer.Group)
-	if g != nil { // new group
+	if g == nil { // new group
 		newGroup := Group{
 			Name:           params.Group,
 			Status:         1,

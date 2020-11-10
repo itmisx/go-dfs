@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -88,6 +89,7 @@ func (s *Storage) Upload(c *gin.Context) {
 	}
 	c.Writer.Header().Set("Go-Dfs-Upload-Result", "1")
 	c.Writer.Header().Set("Go-Dfs-Ext", goDfsExt)
+	c.Writer.Header().Set("Go-Dfs-Size", strconv.FormatInt(file.Size, 10))
 	pkg.Helper{}.AjaxReturn(c, 0, "")
 	return
 }

@@ -11,9 +11,3 @@ type SyncFileInfo struct {
 	Action    string `json:"action"` // add or delete
 	Group     string `json:"group"`
 }
-
-// SyncLogType , file sync log struct
-type SyncLogType struct {
-	Time int64 `json:"time"`
-	SyncFileInfo
-}
