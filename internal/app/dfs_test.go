@@ -62,10 +62,16 @@ func TestLevelDb(*testing.T) {
 		fmt.Printf("%s\n", iter.Key())
 	}
 	iter.Release()
-	iter1 := leveldb.Db().NewIterator(nil, nil)
-	for iter1.Next() {
+
+	leveldb1, err := pkg.NewLDB(defines.StorageGroupDb)
+	if err != nil {
+		return
+	}
+	iter1 := leveldb1.Db().NewIterator(nil, nil)
+	for iter.Next() {
 		fmt.Printf("%s\n", iter1.Key())
 	}
+	iter.Release()
 }
 
 func TestDiskUsage(t *testing.T) {

@@ -252,7 +252,6 @@ func (t *Tracker) HanldeStorageServerReport(c *gin.Context) {
 		Cap    uint64 `json:"cap"`
 	}
 	c.ShouldBind(&params)
-	fmt.Printf("%+v\n", params)
 	host, _, _ := net.SplitHostPort(c.Request.RemoteAddr)
 	// pack
 	storageServer := StorageServer{
