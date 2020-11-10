@@ -1,0 +1,22 @@
+#服务类型tracker or storage
+server_type: "storage"
+#http_port
+http_port: 9000
+#默认语言
+default_lang: zh_cn
+#跟踪服务器的配置
+tracker:
+  node_id: 1
+# 存储服务器的配置    
+storage:
+  #http_scheme
+  http_scheme: http
+  #存储服务所属的group
+  group: group1 
+  #文件大小限制
+  file_size_limit: 100
+  #存储目录
+  storage_path: ./
+  #跟踪服务器，可以有多个
+  tracker: 
+    - http://127.0.0.1:9000
