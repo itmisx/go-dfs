@@ -46,6 +46,8 @@ storage:
   tracker: 
     - http://127.0.0.1:9000
 ```
+服务的类型：用server_type来定义。
+最小系统，要配置一个tracker，一个storage
 # 接口说明
 - 上传
   - api: /upload
