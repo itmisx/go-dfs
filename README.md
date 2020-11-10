@@ -50,12 +50,14 @@ storage:
 - 上传
   - api: /upload
   - method: post
+  - 参数:file
 - 下载
   - api: /完整文件路径
   - method: get
 - 删除
   - api: /delete
   - method: post
+  - 参数: file_name(注意为完整路径)
   
 # 项目工具
 - gin，高效的golang web框架
