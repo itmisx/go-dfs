@@ -336,6 +336,7 @@ func (t *Tracker) HandleReportErrorMsg(c *gin.Context) {
 func (t *Tracker) StartTrackerCron() {
 	cr := cron.New(cron.WithSeconds())
 	// 计算各个存储组的状态以及最大可用容量
+	// do/10second
 	cr.AddFunc("*/10 * * * * *", func() {
 		groups := t.GetGroups()
 		for _, g := range groups {
@@ -369,7 +370,8 @@ func (t *Tracker) StartTrackerCron() {
 		}
 	})
 	// 文件同步补偿
-	cr.AddFunc("* * * * * *", func() {
+	// do/hour
+	cr.AddFunc("0 0 * * * *", func() {
 		ldb, err := pkg.NewLDB(defines.FileSyncLogDb)
 		if err != nil {
 			return
