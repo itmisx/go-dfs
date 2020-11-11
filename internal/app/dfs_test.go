@@ -10,7 +10,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 )
 
-func TestTracker(t *testing.T) {
+func TestDfs(t *testing.T) {
 	// 启动tracker
 	config1 := pkg.DsfConfigType{
 		ServerType:  "tracker",
