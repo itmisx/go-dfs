@@ -78,6 +78,12 @@ func (s *Storage) Upload(c *gin.Context) {
 		pkg.Helper{}.AjaxReturn(c, 1, "")
 		return
 	}
+	// 文件大小限制
+	size := file.Size
+	if s.ServerConfig.Storage.FileSizeLimit > 0 && size > s.ServerConfig.Storage.FileSizeLimit {
+		pkg.Helper{}.AjaxReturn(c, 300003, "")
+		return
+	}
 	// 保存上传的文件
 	goDfsFilename := c.Request.Header.Get("Go-Dfs-Filename")
 	goDfsExt := path.Ext(file.Filename)

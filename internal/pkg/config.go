@@ -23,6 +23,8 @@ type DsfConfigType struct {
 		HTTPScheme string `mapstructure:"http_scheme"`
 		// group
 		Group string `mapstructure:"group"`
+		// file size limit
+		FileSizeLimit int64 `mapstructure:"file_size_limit"`
 		// storagePath
 		StoragePath string `mapstructure:"storage_path"`
 		// trackerServers,can be one or more
