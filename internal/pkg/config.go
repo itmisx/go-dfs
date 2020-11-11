@@ -34,8 +34,8 @@ type DsfConfigType struct {
 func InitConfig() {
 	v := viper.New()
 	v.AddConfigPath(".")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
+	v.AddConfigPath("./configs")
+	v.AddConfigPath("../configs")
 	v.SetConfigName("dfs")
 	v.SetConfigType("yaml")
 	err := v.ReadInConfig()
