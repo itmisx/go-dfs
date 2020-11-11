@@ -13,8 +13,8 @@ storage:
   http_scheme: http
   #存储服务所属的group
   group: group1 
-  #文件大小限制
-  file_size_limit: 100
+  #文件大小限制(byte)
+  file_size_limit: 100000
   #存储目录
   storage_path: ./
   #跟踪服务器，可以有多个
