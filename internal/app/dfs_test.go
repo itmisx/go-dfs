@@ -53,6 +53,7 @@ func TestUUID(t *testing.T) {
 }
 
 func TestLevelDb(*testing.T) {
+	fmt.Println("**************filelist****************")
 	leveldb, err := pkg.NewLDB(defines.FileListDb)
 	if err != nil {
 		return
@@ -62,16 +63,26 @@ func TestLevelDb(*testing.T) {
 		fmt.Printf("%s\n", iter.Key())
 	}
 	iter.Release()
-
+	fmt.Println("**************grouplist****************")
 	leveldb1, err := pkg.NewLDB(defines.StorageGroupDb)
 	if err != nil {
 		return
 	}
 	iter1 := leveldb1.Db().NewIterator(nil, nil)
-	for iter.Next() {
+	for iter1.Next() {
 		fmt.Printf("%s\n", iter1.Key())
 	}
 	iter.Release()
+	fmt.Println("**************synclog****************")
+	leveldb2, err := pkg.NewLDB(defines.FileSyncLogDb)
+	if err != nil {
+		return
+	}
+	iter2 := leveldb2.Db().NewIterator(nil, nil)
+	for iter2.Next() {
+		fmt.Printf("%s\n", iter2.Key())
+	}
+	iter2.Release()
 }
 
 func TestDiskUsage(t *testing.T) {

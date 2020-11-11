@@ -223,7 +223,7 @@ func (t *Tracker) Delete(c *gin.Context) {
 		ldbData, _ := json.Marshal(syncFileInfo)
 		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.Host+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
-			leveldb.Do(DelInfo.File+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 		var syncRes struct {
@@ -231,11 +231,11 @@ func (t *Tracker) Delete(c *gin.Context) {
 		}
 		err = json.Unmarshal(res, &syncRes)
 		if err != nil {
-			leveldb.Do(DelInfo.File+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 		if syncRes.Code > 0 {
-			leveldb.Do(DelInfo.File+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 	}
@@ -369,7 +369,7 @@ func (t *Tracker) StartTrackerCron() {
 		}
 	})
 	// 文件同步补偿
-	cr.AddFunc("* * */2 * * *", func() {
+	cr.AddFunc("* * * * * *", func() {
 		ldb, err := pkg.NewLDB(defines.FileSyncLogDb)
 		if err != nil {
 			return
@@ -401,7 +401,7 @@ func (t *Tracker) StartTrackerCron() {
 						continue
 					}
 					// if succeed , del the record
-					ldb.Do(fileSyncInfo.FileName, nil)
+					ldb.Do(fileSyncInfo.FileName+"-"+fileSyncInfo.Action, nil)
 				}
 			}
 		}

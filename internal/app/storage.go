@@ -102,11 +102,6 @@ func (s *Storage) Upload(c *gin.Context) {
 	return
 }
 
-// Delete delete file
-func (s *Storage) Delete(c *gin.Context) {
-
-}
-
 // SyncFile sync file
 func (s *Storage) SyncFile(c *gin.Context) {
 	var syncFileInfo schema.SyncFileInfo
