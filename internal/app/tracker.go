@@ -187,11 +187,11 @@ func (t *Tracker) FileSyncAndLog(sm StorageServer, syncFileInfo schema.SyncFileI
 // Delete , 文件删除
 func (t *Tracker) Delete(c *gin.Context) {
 	var DelInfo struct {
-		FileName string `json:"file_name"`
+		File string `json:"file"`
 	}
 	c.ShouldBind(&DelInfo)
 	g := ""
-	f := strings.Split(DelInfo.FileName, "/")
+	f := strings.Split(DelInfo.File, "/")
 	g = f[0]
 	if g == "" {
 		g = f[1]
@@ -210,20 +210,20 @@ func (t *Tracker) Delete(c *gin.Context) {
 	// delete the file record from file list db
 	leveldb1, err1 := pkg.NewLDB(defines.FileListDb)
 	if err1 == nil {
-		leveldb1.Do(DelInfo.FileName, nil)
+		leveldb1.Do(DelInfo.File, nil)
 	}
 	for _, s := range group.StorageServers {
 		syncFileInfo := schema.SyncFileInfo{
 			DstScheme: s.Scheme, DstHost: s.Host,
-			FilePath: path.Dir(DelInfo.FileName),
-			FileName: path.Base(DelInfo.FileName),
+			FilePath: path.Dir(DelInfo.File),
+			FileName: path.Base(DelInfo.File),
 			Action:   defines.FileSyncActionDelete,
 			Group:    s.Group,
 		}
 		ldbData, _ := json.Marshal(syncFileInfo)
 		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.Host+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
-			leveldb.Do(DelInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(DelInfo.File+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 		var syncRes struct {
@@ -231,11 +231,11 @@ func (t *Tracker) Delete(c *gin.Context) {
 		}
 		err = json.Unmarshal(res, &syncRes)
 		if err != nil {
-			leveldb.Do(DelInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(DelInfo.File+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 		if syncRes.Code > 0 {
-			leveldb.Do(DelInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(DelInfo.File+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 	}
