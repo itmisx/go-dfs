@@ -60,7 +60,7 @@ storage:
 - [tracker配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/tracker.yml)
 - [storage1配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-1.yml)
 - [storage2配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-2.yml)
-## docker安装
+## 二、docker安装
 参考docker-compose.yml配置
 ```
 version: "3.7"
