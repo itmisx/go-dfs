@@ -1,0 +1,19 @@
+#服务类型tracker or storage
+server_type: "storage"
+#http_port
+http_port: 9000
+#默认语言
+default_lang: zh_cn
+# 存储服务器的配置    
+storage:
+  #http_scheme
+  http_scheme: http
+  #存储服务所属的group
+  group: group1 
+  #文件大小限制(byte)
+  file_size_limit: 100000
+  #存储目录
+  storage_path: ./
+  #跟踪服务器，可以有多个
+  trackers: 
+    - http://172.20.0.2:9000

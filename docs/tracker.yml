@@ -1,0 +1,9 @@
+#服务类型tracker or storage
+server_type: "tracker"
+#http_port
+http_port: 9000
+#默认语言
+default_lang: zh_cn
+#跟踪服务器的配置
+tracker:
+  node_id: 1
