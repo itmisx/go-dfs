@@ -15,6 +15,8 @@
 - tracker自动容量均衡到不同的存储组
 
 # 使用说明
+>特别说明，无论是tracker还是storage，使用的都是同个编译输出文件，仅仅配置不同而已
+## 一、源码安装
 - 1.clone源代码,编译出二进制文件
 ```
 cd cmd
@@ -48,6 +50,93 @@ storage:
 ```
 服务的类型：用server_type来定义。
 最小系统，要配置一个tracker，一个storage
+## docker安装
+参考docker-compose.yml配置
+```
+version: "3.7"
+services:
+  #tracker
+  tracker:
+    image: golang:1.15
+    container_name: "dfs_tracker"
+    expose:
+      - 9000
+    volumes:
+      - ./go-dfs/tracker:/app  
+    working_dir: /app
+    command: /app/tracker_app
+    restart: "always"
+    networks:
+      soa: 
+        ipv4_address: 172.20.0.2
+    logging:
+      options:
+        max-size: "10M"
+        max-file: "5"
+  storage_1:
+    image: golang:1.15
+    container_name: "dfs_storage_1"
+    expose:
+      - 9000
+    volumes:
+      - ./go-dfs/storage-1:/app
+    working_dir: /app
+    command: /app/storage_app
+    restart: "always"
+    networks:
+      soa: 
+        ipv4_address: 172.20.0.3
+    logging:
+      options:
+        max-size: "10M"
+        max-file: "5"
+  storage_2:
+    image: golang:1.15
+    container_name: "dfs_storage_2"
+    expose:
+      - 9000
+    volumes:
+      - ./go-dfs/storage-2:/app
+    working_dir: /app
+    command: /app/storage_app
+    restart: "always"
+    networks:
+      soa: 
+        ipv4_address: 172.20.0.4
+    logging:
+      options:
+        max-size: "10M"
+        max-file: "5"
+# 网络配置
+networks:
+  dfs:
+    name: dfs
+    ipam:
+      driver: default
+      config:
+        -
+          subnet: "172.20.0.0/16"
+```
+目录结构
+```
+-go-dfs
+ |_ _tracker
+ |      |_ _ configs
+ |      |       |_ _ dfs.yml
+ |      |_ _ tracker
+ |_ _storage-1
+ |      |_ _ configs
+ |      |       |_ _ dfs.yml
+ |      |_ _ storage
+ |_ _storage-2
+        |_ _ configs
+        |       |_ _ dfs.yml
+        |_ _ storage
+```
+dfs.yml的配置请参考configs/dfs.yml
+其中：serverType要配置对应的服务类型，跟踪服务器为`tracker`,存储服务器为`storage`
+另外存储服务器时，要配置tracker服务器的host地址
+
 # 接口说明
 统一返回格式：
   ```
@@ -124,3 +213,6 @@ go Start(&config3)
 # 项目工具
 - gin，高效的golang web框架
 - leveldb，基于golang的kv数据库
+
+# License
+MIT
