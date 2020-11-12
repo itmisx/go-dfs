@@ -52,6 +52,10 @@ storage:
 ```
 服务的类型：用server_type来定义。
 最小系统，要配置一个tracker，一个storage
+配置参考
+- [tracker配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/tracker.yml)
+- [storage1配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-1.yml)
+- [storage2配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-2.yml)
 ## docker安装
 参考docker-compose.yml配置
 ```
@@ -138,7 +142,10 @@ networks:
 dfs.yml的配置请参考configs/dfs.yml
 其中：serverType要配置对应的服务类型，跟踪服务器为`tracker`,存储服务器为`storage`
 另外存储服务器时，要配置tracker服务器的host地址
-
+配置参考
+- [tracker配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/tracker.yml)
+- [storage1配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-1.yml)
+- [storage2配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-2.yml)
 # 接口说明
 统一返回格式：
   ```
