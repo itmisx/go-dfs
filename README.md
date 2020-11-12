@@ -49,6 +49,15 @@ storage:
 服务的类型：用server_type来定义。
 最小系统，要配置一个tracker，一个storage
 # 接口说明
+统一返回格式：
+  ```
+  {
+    "code": 0,
+    "data": {},
+    "msg": ""
+  }
+  ```
+  code为0表示操作成功，非0表示有错误，msg为错误信息
 - 上传
   - api: /upload
   - method: post
