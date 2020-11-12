@@ -67,7 +67,7 @@ services:
     command: /app/tracker_app
     restart: "always"
     networks:
-      soa: 
+      dfs: 
         ipv4_address: 172.20.0.2
     logging:
       options:
@@ -84,7 +84,7 @@ services:
     command: /app/storage_app
     restart: "always"
     networks:
-      soa: 
+      dfs: 
         ipv4_address: 172.20.0.3
     logging:
       options:
@@ -101,7 +101,7 @@ services:
     command: /app/storage_app
     restart: "always"
     networks:
-      soa: 
+      dfs: 
         ipv4_address: 172.20.0.4
     logging:
       options:
