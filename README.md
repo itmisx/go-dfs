@@ -86,7 +86,41 @@ storage:
     "msg": ""
   }
   ```
-  
+# 测试用例  
+参考目录: easy-dfs/internal/app/dfs_test.go
+```go
+// 启动tracker
+config1 := pkg.DsfConfigType{
+  ServerType:  "tracker",
+  HTTPPort:    "9000",
+  DefaultLang: "zh_cn",
+}
+config1.Tracker.NodeID = 1
+go Start(&config1)
+// 启动storage
+config2 := pkg.DsfConfigType{
+  ServerType:  "storage",
+  HTTPPort:    "9001",
+  DefaultLang: "zh_cn",
+}
+config2.Storage.HTTPScheme = "http"
+config2.Storage.Group = "group1"
+config2.Storage.StoragePath = "./dfs/1"
+config2.Storage.Tracker = []string{"http://127.0.0.1:9000"}
+go Start(&config2)
+
+// 启动storage
+config3 := pkg.DsfConfigType{
+  ServerType:  "storage",
+  HTTPPort:    "9002",
+  DefaultLang: "zh_cn",
+}
+config3.Storage.HTTPScheme = "http"
+config3.Storage.Group = "group1"
+config3.Storage.StoragePath = "./dfs/2"
+config3.Storage.Tracker = []string{"http://127.0.0.1:9000"}
+go Start(&config3)
+```
 # 项目工具
 - gin，高效的golang web框架
 - leveldb，基于golang的kv数据库
