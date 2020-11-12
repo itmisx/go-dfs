@@ -153,7 +153,7 @@ dfs.yml的配置请参考configs/dfs.yml
   - api: /upload
   - method: post
   - 参数:file
-  返回结果示例：
+  - 返回结果示例：
   ```
   {
     "code": 0,
@@ -170,7 +170,7 @@ dfs.yml的配置请参考configs/dfs.yml
   - api: /delete
   - method: post
   - 参数: file(值为完整的文件路径)
-  返回结果示例:
+  - 返回结果示例:
   ```
   {
     "code": 0,
