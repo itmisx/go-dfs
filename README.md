@@ -47,7 +47,7 @@ storage:
   #存储目录
   storage_path: ./
   #跟踪服务器，可以有多个
-  tracker: 
+  trackers: 
     - http://127.0.0.1:9000
 ```
 服务的类型：用server_type来定义。
