@@ -7,6 +7,10 @@
 [![gopsutil](https://raw.githubusercontent.com/smally84/go-dfs/28deed0c494ef141109a5e141c54b752c20923b0/assets/gopsutil.svg)]()
 
 
+```
+客户端 ---> tracker------>storage1
+                 \------>storage2
+```
 
 # 项目说明
 本项目参考fastdfs逻辑进行简单实现，主要功能包括：
@@ -52,7 +56,7 @@ storage:
 ```
 服务的类型：用server_type来定义。
 最小系统，要配置一个tracker，一个storage
-配置参考
+#### 配置参考
 - [tracker配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/tracker.yml)
 - [storage1配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-1.yml)
 - [storage2配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-2.yml)
@@ -142,7 +146,7 @@ networks:
 dfs.yml的配置请参考configs/dfs.yml
 其中：serverType要配置对应的服务类型，跟踪服务器为`tracker`,存储服务器为`storage`
 另外存储服务器时，要配置tracker服务器的host地址
-配置参考
+#### 配置参考
 - [tracker配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/tracker.yml)
 - [storage1配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-1.yml)
 - [storage2配置文件](https://github.com/smally84/easy-dfs/blob/main/docs/storage-2.yml)
