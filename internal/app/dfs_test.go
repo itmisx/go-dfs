@@ -28,7 +28,7 @@ func TestDfs(t *testing.T) {
 	config2.Storage.HTTPScheme = "http"
 	config2.Storage.Group = "group1"
 	config2.Storage.StoragePath = "./dfs/1"
-	config2.Storage.Tracker = []string{"http://127.0.0.1:9000"}
+	config2.Storage.Trackers = []string{"http://127.0.0.1:9000"}
 	go Start(&config2)
 
 	// 启动storage
@@ -40,7 +40,7 @@ func TestDfs(t *testing.T) {
 	config3.Storage.HTTPScheme = "http"
 	config3.Storage.Group = "group1"
 	config3.Storage.StoragePath = "./dfs/2"
-	config3.Storage.Tracker = []string{"http://127.0.0.1:9000"}
+	config3.Storage.Trackers = []string{"http://127.0.0.1:9000"}
 	go Start(&config3)
 
 	<-make(chan bool)
