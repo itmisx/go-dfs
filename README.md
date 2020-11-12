@@ -53,6 +53,16 @@ storage:
   - api: /upload
   - method: post
   - 参数:file
+  返回结果示例：
+  ```
+  {
+    "code": 0,
+    "data": {
+        "url": "/group1/2020/11/12/7/1326785062468919296.png"
+    },
+    "msg": ""
+  }
+  ```
 - 下载
   - api: /完整文件路径
   - method: get
@@ -60,6 +70,13 @@ storage:
   - api: /delete
   - method: post
   - 参数: file(值为完整的文件路径)
+  返回结果示例:
+  ```
+  {
+    "code": 0,
+    "msg": ""
+  }
+  ```
   
 # 项目工具
 - gin，高效的golang web框架
