@@ -188,7 +188,7 @@ func (s *Storage) ReportStatus() {
 	}
 	// 获取容量信息
 	// 获取负载信息
-	for _, url := range s.ServerConfig.Storage.TrackerServers {
+	for _, url := range s.ServerConfig.Storage.Tracker {
 		pkg.Helper{}.PostJSON(url+"/report-status", data, nil, 10*time.Second)
 	}
 }
@@ -200,7 +200,7 @@ func (s *Storage) ReportErrorMsg(msg string) {
 		Port  string
 		Msg   string
 	}
-	for _, url := range s.ServerConfig.Storage.TrackerServers {
+	for _, url := range s.ServerConfig.Storage.Tracker {
 		pkg.Helper{}.PostJSON(url+"/report-err",
 			errMsg{
 				Group: s.ServerConfig.Storage.Group,

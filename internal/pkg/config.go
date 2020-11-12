@@ -28,7 +28,7 @@ type DsfConfigType struct {
 		// storagePath
 		StoragePath string `mapstructure:"storage_path"`
 		// trackerServers,can be one or more
-		TrackerServers []string `mapstructure:"tracker_servers"`
+		Tracker []string `mapstructure:"tracker"`
 	} `mapstructure:"storage"`
 }
 
