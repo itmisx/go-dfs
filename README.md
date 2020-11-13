@@ -228,4 +228,4 @@ go Start(&config3)
 - leveldb，基于golang的kv数据库
 
 # License
-MIT
+Use of easy-dfs is governed by the Mit License found at [LICENSE](https://github.com/smally84/easy-dfs/blob/main/LICENSE)
