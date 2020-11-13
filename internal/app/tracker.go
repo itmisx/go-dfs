@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/robfig/cron/v3"
 )
 
@@ -62,6 +63,7 @@ func (t *Tracker) Start(serverConfig pkg.DsfConfigType) {
 	router.Use(t.Download())
 	router.POST("/upload", t.Upload)
 	router.POST("/delete", t.Delete)
+	router.POST("/confirm", t.Confirm)
 	router.POST("/report-status", t.HanldeStorageServerReport)
 	router.POST("/report-err", t.HandleReportErrorMsg)
 
@@ -98,6 +100,10 @@ func (t *Tracker) Download() gin.HandlerFunc {
 
 // Upload , 文件上传
 func (t *Tracker) Upload(c *gin.Context) {
+	var FileCtl struct {
+		FileConfirm bool `json:"file_confirm"`
+	}
+	c.ShouldBindBodyWith(&FileCtl, binding.JSON)
 	// select storage
 	group, err := t.SelectGroupForUPload()
 	if err != nil {
@@ -120,13 +126,19 @@ func (t *Tracker) Upload(c *gin.Context) {
 	if c.Writer.Header().Get("Go-Dfs-Upload-Result") == "1" {
 		// get the file ext
 		goDfsExt := c.Writer.Header().Get("Go-Dfs-Ext")
+		// put to the temp file list
+		tempFileListDb, err := pkg.NewLDB(defines.TempFileListDb)
+		if err == nil {
+			ldata, _ := json.Marshal(schema.TempFile{CreateTime: time.Now().Unix()})
+			tempFileListDb.Do(goDfsFilename+goDfsExt, ldata)
+		}
 		// recode file list db
-		leveldb, err := pkg.NewLDB(defines.FileListDb)
+		fileListDb, err := pkg.NewLDB(defines.FileListDb)
 		if err == nil {
 			fileInfo := schema.FileInfo{}
 			fileInfo.Size, _ = strconv.ParseUint(c.Writer.Header().Get("Go-Dfs-Size"), 10, 64)
 			ldata, _ := json.Marshal(fileInfo)
-			leveldb.Do(goDfsFilepath+"/"+goDfsFilename+goDfsExt, ldata)
+			fileListDb.Do(goDfsFilepath+"/"+goDfsFilename+goDfsExt, ldata)
 		}
 		StorageServers := t.GetStorages(group)
 		for _, sm := range StorageServers {
@@ -174,11 +186,11 @@ func (t *Tracker) FileSyncAndLog(sm StorageServer, syncFileInfo schema.SyncFileI
 		}
 		err = json.Unmarshal(res, &syncRes)
 		if err != nil {
-			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
+			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
 			return
 		}
 		if syncRes.Code > 0 {
-			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
+			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
 			return
 		}
 	}
@@ -190,19 +202,50 @@ func (t *Tracker) Delete(c *gin.Context) {
 		File string `json:"file"`
 	}
 	c.ShouldBind(&DelInfo)
+	errCode := t.DeleteSync(DelInfo.File)
+	pkg.Helper{}.AjaxReturn(c, errCode, "")
+
+}
+
+// Confirm , 文件确认
+// 避免文件被删除
+func (t *Tracker) Confirm(c *gin.Context) {
+	var ConfirmFile struct {
+		File string `json:"file"`
+	}
+	c.ShouldBind(&ConfirmFile)
+	tempFileListDb, err := pkg.NewLDB(defines.TempFileListDb)
+	if err != nil {
+		pkg.Helper{}.AjaxReturn(c, 300006, "")
+		return
+	}
+	_, err1 := tempFileListDb.Do(ConfirmFile.File, nil)
+	if err1 != nil {
+		pkg.Helper{}.AjaxReturn(c, 300006, "")
+		return
+	}
+	pkg.Helper{}.AjaxReturn(c, 0, "")
+}
+
+// DeleteSync 删除同步
+func (t *Tracker) DeleteSync(file string) (errCode int64) {
 	g := ""
-	f := strings.Split(DelInfo.File, "/")
+	f := strings.Split(file, "/")
+	if len(f) < 2 {
+		errCode = 300004
+		return
+	}
 	g = f[0]
 	if g == "" {
 		g = f[1]
 	}
 	if g == "" {
-		pkg.Helper{}.AjaxReturn(c, 300004, "")
+		errCode = 300004
 		return
 	}
 	group, err := t.GetGroup(g)
 	if err != nil {
-		pkg.Helper{}.AjaxReturn(c, 300004, "")
+		errCode = 300004
 		return
 	}
 	// delete file from everyone storage server of the group
@@ -210,13 +253,13 @@ func (t *Tracker) Delete(c *gin.Context) {
 	// delete the file record from file list db
 	leveldb1, err1 := pkg.NewLDB(defines.FileListDb)
 	if err1 == nil {
-		leveldb1.Do(DelInfo.File, nil)
+		leveldb1.Do(file, nil)
 	}
 	for _, s := range group.StorageServers {
 		syncFileInfo := schema.SyncFileInfo{
 			DstScheme: s.Scheme, DstHost: s.Host,
-			FilePath: path.Dir(DelInfo.File),
-			FileName: path.Base(DelInfo.File),
+			FilePath: path.Dir(file),
+			FileName: path.Base(file),
 			Action:   defines.FileSyncActionDelete,
 			Group:    s.Group,
 		}
@@ -231,14 +274,15 @@ func (t *Tracker) Delete(c *gin.Context) {
 		}
 		err = json.Unmarshal(res, &syncRes)
 		if err != nil {
-			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 		if syncRes.Code > 0 {
-			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 	}
+	return 0
 }
 
 // HanldeStorageServerReport , 处理存储服务器的上报信息
@@ -335,6 +379,25 @@ func (t *Tracker) HandleReportErrorMsg(c *gin.Context) {
 // 文件同步失败的补偿
 func (t *Tracker) StartTrackerCron() {
 	cr := cron.New(cron.WithSeconds())
+	cr.AddFunc("0 0 * * * *", func() {
+		tempFileListDb, err := pkg.NewLDB(defines.TempFileListDb)
+		if err != nil {
+			return
+		}
+		iter := tempFileListDb.Db().NewIterator(nil, nil)
+		for iter.Next() {
+			tempFile := schema.TempFile{}
+			err := json.Unmarshal(iter.Value(), &tempFile)
+			if err != nil {
+				continue
+			}
+			// 超过半个小时，删除文件
+			if time.Now().Unix()-tempFile.CreateTime > 1800 {
+				t.DeleteSync(string(iter.Key()))
+			}
+		}
+		iter.Release()
+	})
 	// 计算各个存储组的状态以及最大可用容量
 	// do/10second
 	cr.AddFunc("*/10 * * * * *", func() {

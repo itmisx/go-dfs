@@ -10,6 +10,8 @@ const (
 	FileListDb = "file_list_db"
 	// LogDb
 	LogDb = "log_db"
+	// 文件回收站
+	TempFileListDb = "temp_file_list_db"
 )
 
 // define action
