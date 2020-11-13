@@ -174,6 +174,10 @@ dfs.yml的配置请参考configs/dfs.yml
     "msg": ""
   }
   ```
+- 上传确认
+  - api: /confirm
+  - method: post
+  - 参数:file
 - 下载
   - api: /完整文件路径
   - method: get
