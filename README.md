@@ -178,6 +178,7 @@ dfs.yml的配置请参考configs/dfs.yml
   - api: /confirm
   - method: post
   - 参数:file
+  - 备注：需要在配置文件中启用enable_temp_file:true
 - 下载
   - api: /完整文件路径
   - method: get
