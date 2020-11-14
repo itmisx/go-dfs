@@ -127,10 +127,12 @@ func (t *Tracker) Upload(c *gin.Context) {
 		// get the file ext
 		goDfsExt := c.Writer.Header().Get("Go-Dfs-Ext")
 		// put to the temp file list
-		tempFileListDb, err := pkg.NewLDB(defines.TempFileListDb)
-		if err == nil {
-			ldata, _ := json.Marshal(schema.TempFile{CreateTime: time.Now().Unix()})
-			tempFileListDb.Do(goDfsFilename+goDfsExt, ldata)
+		if t.ServerConfig.Tracker.EnableTempFile {
+			tempFileListDb, err := pkg.NewLDB(defines.TempFileListDb)
+			if err == nil {
+				ldata, _ := json.Marshal(schema.TempFile{CreateTime: time.Now().Unix()})
+				tempFileListDb.Do(goDfsFilename+goDfsExt, ldata)
+			}
 		}
 		// recode file list db
 		fileListDb, err := pkg.NewLDB(defines.FileListDb)

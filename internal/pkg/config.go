@@ -16,7 +16,10 @@ type DsfConfigType struct {
 	DefaultLang string `mapstructure:"default_lang"`
 	// NodeType,may be tracker server or storage server
 	Tracker struct {
+		// 节点id，用于雪花算法生成唯一文件名称
 		NodeID int64 `mapstructure:"node_id"`
+		//启用临时文件功能
+		EnableTempFile bool `mapstructure:"enable_temp_file"`
 	} `mapstructure:"tracker"`
 	Storage struct {
 		// storage http scheme

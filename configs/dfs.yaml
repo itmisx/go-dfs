@@ -6,7 +6,10 @@ http_port: 9000
 default_lang: zh_cn
 #跟踪服务器的配置
 tracker:
+  #节点配置，配合雪花算法生成文件唯一名称
   node_id: 1
+  # 启用临时文件功能
+  enable_temp_file: true
 # 存储服务器的配置    
 storage:
   #http_scheme
