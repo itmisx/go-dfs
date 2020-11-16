@@ -1,4 +1,4 @@
-# easy-dfs
+# go-dfs
 简单的分布式文件系统,该项目使用纯go语言编写，并完全开源，部署简单方便。
 
 [![LICENSE](https://raw.githubusercontent.com/smally84/go-dfs/4bffdfa2b020b98ccd8d618a53ac7c0294d26786/assets/mit.svg)](https://github.com/syndtr/goleveldb)
