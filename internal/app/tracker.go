@@ -36,7 +36,7 @@ type Group struct {
 type StorageServer struct {
 	Group      string `json:"group"`
 	Scheme     string `json:"scheme"`      //主机http协议类型,https or http
-	Host       string `json:"host"`        //主机信息，ip:port
+	ServerName string `json:"server_name"` //主机信息，ip:port
 	Status     int8   `json:"status"`      //主机状态, status，0：offline 1：alive 2: file sync 3: no enough space
 	Cap        uint64 `json:"cap"`         //最大可用容量
 	UpdateTime int64  `json:"update_time"` //更新时间
@@ -90,7 +90,7 @@ func (t *Tracker) Download() gin.HandlerFunc {
 				// 选择合适的存储
 				s, err := t.SelectStorage(c, group)
 				// 反向代理
-				t.HTTPProxy(c, s.Scheme, s.Host)
+				t.HTTPProxy(c, s.Scheme, s.ServerName)
 				c.Abort()
 			}
 		}
@@ -121,7 +121,7 @@ func (t *Tracker) Upload(c *gin.Context) {
 	c.Request.Header.Add("Go-Dfs-Filename", goDfsFilename)
 
 	// http proxy
-	t.HTTPProxy(c, validStorageServer.Scheme, validStorageServer.Host)
+	t.HTTPProxy(c, validStorageServer.Scheme, validStorageServer.ServerName)
 	// distribute
 	if c.Writer.Header().Get("Go-Dfs-Upload-Result") == "1" {
 		// get the file ext
@@ -144,13 +144,13 @@ func (t *Tracker) Upload(c *gin.Context) {
 		}
 		StorageServers := t.GetStorages(group)
 		for _, sm := range StorageServers {
-			if sm.Host == validStorageServer.Host {
+			if sm.ServerName == validStorageServer.ServerName {
 				continue
 			}
 			go func(sm StorageServer) {
 				syncFileInfo := schema.SyncFileInfo{
-					SrcScheme: validStorageServer.Scheme, SrcHost: validStorageServer.Host,
-					DstScheme: sm.Scheme, DstHost: sm.Host,
+					SrcScheme: validStorageServer.Scheme, SrcHost: validStorageServer.ServerName,
+					DstScheme: sm.Scheme, DstHost: sm.ServerName,
 					FilePath: goDfsFilepath,
 					FileName: goDfsFilename + goDfsExt,
 					Action:   defines.FileSyncActionAdd,
@@ -176,7 +176,7 @@ func (t *Tracker) FileSyncAndLog(sm StorageServer, syncFileInfo schema.SyncFileI
 		// 写入日志，定时继续同步
 		leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
 	} else if sm.Status == 1 {
-		URL := sm.Scheme + "://" + sm.Host
+		URL := sm.Scheme + "://" + sm.ServerName
 		res, err := pkg.Helper{}.PostJSON(URL+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
 			// 写入日志，定时继续同步
@@ -259,14 +259,14 @@ func (t *Tracker) DeleteSync(file string) (errCode int64) {
 	}
 	for _, s := range group.StorageServers {
 		syncFileInfo := schema.SyncFileInfo{
-			DstScheme: s.Scheme, DstHost: s.Host,
+			DstScheme: s.Scheme, DstHost: s.ServerName,
 			FilePath: path.Dir(file),
 			FileName: path.Base(file),
 			Action:   defines.FileSyncActionDelete,
 			Group:    s.Group,
 		}
 		ldbData, _ := json.Marshal(syncFileInfo)
-		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.Host+"/sync-file", syncFileInfo, nil, 10*time.Second)
+		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.ServerName+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
 			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
@@ -302,7 +302,7 @@ func (t *Tracker) HanldeStorageServerReport(c *gin.Context) {
 	// pack
 	storageServer := StorageServer{
 		Scheme:     params.Scheme,
-		Host:       net.JoinHostPort(host, params.Port),
+		ServerName: net.JoinHostPort(host, params.Port),
 		Status:     1,
 		Cap:        params.Cap,
 		Group:      params.Group,
@@ -323,7 +323,7 @@ func (t *Tracker) HanldeStorageServerReport(c *gin.Context) {
 			StorageServers: make(map[string]StorageServer),
 		}
 		// add new member
-		newGroup.StorageServers[storageServer.Host] = storageServer
+		newGroup.StorageServers[storageServer.ServerName] = storageServer
 		// save to group
 		ldbData, err := json.Marshal(newGroup)
 		if err != nil {
@@ -411,7 +411,7 @@ func (t *Tracker) StartTrackerCron() {
 					if time.Now().Unix()-s.UpdateTime > 30 {
 						s.Status = 0
 						// update the storage server status
-						g.StorageServers[s.Host] = s
+						g.StorageServers[s.ServerName] = s
 					} else {
 						validStorages = append(validStorages, s)
 					}
