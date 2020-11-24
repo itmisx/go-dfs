@@ -203,37 +203,46 @@ dfs.yml的配置请参考configs/dfs.yml
 # 测试用例  
 参考目录: easy-dfs/internal/app/dfs_test.go
 ```go
-// 启动tracker
-config1 := pkg.DsfConfigType{
-  ServerType:  "tracker",
-  HTTPPort:    "9000",
-  DefaultLang: "zh_cn",
-}
-config1.Tracker.NodeID = 1
-go Start(&config1)
-// 启动storage
-config2 := pkg.DsfConfigType{
-  ServerType:  "storage",
-  HTTPPort:    "9001",
-  DefaultLang: "zh_cn",
-}
-config2.Storage.HTTPScheme = "http"
-config2.Storage.Group = "group1"
-config2.Storage.StoragePath = "./dfs/1"
-config2.Storage.Tracker = []string{"http://127.0.0.1:9000"}
-go Start(&config2)
+func TestDfs(t *testing.T) {
+	// 启动tracker
+	config1 := pkg.DsfConfigType{
+		ServiceType: "tracker",
+		BindPort:    "9000",
+		DefaultLang: "zh_cn",
+	}
+	config1.Tracker.NodeID = 1
+	config1.Tracker.EnableTempFile = true
+	go Start(&config1)
+	// 启动storage
+	config2 := pkg.DsfConfigType{
+		ServiceType:   "storage",
+		ServiceScheme: "http",
+		ServiceIP:     "127.0.0.1",
+		ServicePort:   "9001",
+		BindPort:      "9001",
+		DefaultLang:   "zh_cn",
+	}
+	config2.Storage.Group = "group1"
+	config2.Storage.StoragePath = "./dfs/1"
+	config2.Storage.Trackers = []string{"http://127.0.0.1:9000"}
+	go Start(&config2)
 
-// 启动storage
-config3 := pkg.DsfConfigType{
-  ServerType:  "storage",
-  HTTPPort:    "9002",
-  DefaultLang: "zh_cn",
+	// 启动storage
+	config3 := pkg.DsfConfigType{
+		ServiceType:   "storage",
+		ServiceScheme: "http",
+		ServiceIP:     "127.0.0.1",
+		ServicePort:   "9002",
+		BindPort:      "9002",
+		DefaultLang:   "zh_cn",
+	}
+	config3.Storage.Group = "group1"
+	config3.Storage.StoragePath = "./dfs/2"
+	config3.Storage.Trackers = []string{"http://127.0.0.1:9000"}
+	go Start(&config3)
+
+	<-make(chan bool)
 }
-config3.Storage.HTTPScheme = "http"
-config3.Storage.Group = "group1"
-config3.Storage.StoragePath = "./dfs/2"
-config3.Storage.Tracker = []string{"http://127.0.0.1:9000"}
-go Start(&config3)
 ```
 # 项目工具
 - gin，高效的golang web框架
