@@ -50,7 +50,7 @@ func (s *Storage) Start(serverConfig pkg.DsfConfigType) {
 	// start storage time task
 	s.StartStorageCron()
 	// run the gin service
-	router.Run(":" + serverConfig.HTTPPort)
+	router.Run(":" + serverConfig.BindPort)
 }
 
 // Upload upload file
@@ -92,12 +92,16 @@ func (s *Storage) Upload(c *gin.Context) {
 		pkg.Helper{}.AjaxReturn(c, 1, "")
 		return
 	}
+	goDfsFileURL := goDfsFilepath + "/" + goDfsFilename + goDfsExt
+	goDfsFileSize := strconv.FormatInt(file.Size, 10)
 	c.Writer.Header().Set("Go-Dfs-Upload-Result", "1")
 	c.Writer.Header().Set("Go-Dfs-Ext", goDfsExt)
-	c.Writer.Header().Set("Go-Dfs-Size", strconv.FormatInt(file.Size, 10))
+	c.Writer.Header().Set("Go-Dfs-Size", goDfsFileSize)
+	c.Writer.Header().Set("Go-Dfs-File-Url", goDfsFileURL)
 
 	pkg.Helper{}.AjaxReturn(c, 0, gin.H{
-		"url": goDfsFilepath + "/" + goDfsFilename + goDfsExt,
+		"url":  goDfsFileURL,
+		"size": goDfsFileSize,
 	})
 	return
 }
@@ -120,8 +124,7 @@ func (s *Storage) SyncFile(c *gin.Context) {
 			}
 		}
 		// download the file
-		res, err := http.Get(syncFileInfo.SrcScheme +
-			"://" + syncFileInfo.SrcHost +
+		res, err := http.Get(syncFileInfo.Src +
 			syncFileInfo.FilePath + "/" + syncFileInfo.FileName)
 		if err != nil {
 			pkg.Helper{}.AjaxReturn(c, 1, "")
@@ -161,7 +164,8 @@ func (s *Storage) SyncFile(c *gin.Context) {
 // sync file system
 func (s *Storage) StartStorageCron() {
 	cr := cron.New(cron.WithSeconds())
-	cr.AddFunc("*/10 * * * * *", func() {
+	cr.AddFunc("*/5 * * * * *", func() {
+		fmt.Println("ReportStatus")
 		s.ReportStatus()
 	})
 	cr.Start()
@@ -170,14 +174,16 @@ func (s *Storage) StartStorageCron() {
 // ReportStatus register status to tracker
 func (s *Storage) ReportStatus() {
 	var data struct {
-		Group  string `json:"group"`
-		Scheme string `json:"scheme"`
-		Port   string `json:"port"`
-		Cap    uint64 `json:"cap"`
+		Group       string `json:"group"`
+		Scheme      string `json:"scheme"`
+		ServiceIP   string `json:"service_ip"`
+		ServicePort string `json:"service_port"`
+		Cap         uint64 `json:"cap"`
 	}
 	data.Group = s.ServerConfig.Storage.Group
-	data.Scheme = s.ServerConfig.Storage.HTTPScheme
-	data.Port = s.ServerConfig.HTTPPort
+	data.Scheme = s.ServerConfig.ServiceScheme
+	data.ServiceIP = s.ServerConfig.ServiceIP
+	data.ServicePort = s.ServerConfig.ServicePort
 
 	path := s.ServerConfig.Storage.StoragePath
 	v, err := disk.Usage(path)
@@ -196,16 +202,19 @@ func (s *Storage) ReportStatus() {
 // ReportErrorMsg report error msg
 func (s *Storage) ReportErrorMsg(msg string) {
 	type errMsg struct {
-		Group string
-		Port  string
-		Msg   string
+		Group       string
+		ServiceIP   string
+		ServicePort string
+		Port        string
+		Msg         string
 	}
 	for _, url := range s.ServerConfig.Storage.Trackers {
 		pkg.Helper{}.PostJSON(url+"/report-err",
 			errMsg{
-				Group: s.ServerConfig.Storage.Group,
-				Port:  s.ServerConfig.HTTPPort,
-				Msg:   msg,
+				Group:       s.ServerConfig.Storage.Group,
+				ServiceIP:   s.ServerConfig.ServiceIP,
+				ServicePort: s.ServerConfig.ServicePort,
+				Msg:         msg,
 			},
 			nil, 10*time.Second)
 	}

@@ -11,9 +11,13 @@ var DsfConfig DsfConfigType
 
 // DsfConfigType dfs配置
 type DsfConfigType struct {
-	ServerType  string `mapstructure:"server_type"`
-	HTTPPort    string `mapstructure:"http_port"`
-	DefaultLang string `mapstructure:"default_lang"`
+	// 对外提供服务的信息
+	ServiceScheme string `mapstructure:"service_scheme"`
+	ServiceIP     string `mapstructure:"service_ip"`
+	ServicePort   string `mapstructure:"service_port"`
+	ServiceType   string `mapstructure:"service_type"`
+	BindPort      string `mapstructure:"bind_port"`
+	DefaultLang   string `mapstructure:"default_lang"`
 	// NodeType,may be tracker server or storage server
 	Tracker struct {
 		// 节点id，用于雪花算法生成唯一文件名称
@@ -22,8 +26,6 @@ type DsfConfigType struct {
 		EnableTempFile bool `mapstructure:"enable_temp_file"`
 	} `mapstructure:"tracker"`
 	Storage struct {
-		// storage http scheme
-		HTTPScheme string `mapstructure:"http_scheme"`
 		// group
 		Group string `mapstructure:"group"`
 		// file size limit

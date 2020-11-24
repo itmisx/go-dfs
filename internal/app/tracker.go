@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"github.com/robfig/cron/v3"
 )
 
@@ -36,7 +35,7 @@ type Group struct {
 type StorageServer struct {
 	Group      string `json:"group"`
 	Scheme     string `json:"scheme"`      //主机http协议类型,https or http
-	ServerName string `json:"server_name"` //主机信息，ip:port
+	ServerAddr string `json:"server_addr"` //主机信息，ip:port
 	Status     int8   `json:"status"`      //主机状态, status，0：offline 1：alive 2: file sync 3: no enough space
 	Cap        uint64 `json:"cap"`         //最大可用容量
 	UpdateTime int64  `json:"update_time"` //更新时间
@@ -67,7 +66,7 @@ func (t *Tracker) Start(serverConfig pkg.DsfConfigType) {
 	router.POST("/report-status", t.HanldeStorageServerReport)
 	router.POST("/report-err", t.HandleReportErrorMsg)
 
-	router.Run(":" + t.ServerConfig.HTTPPort)
+	router.Run(":" + t.ServerConfig.BindPort)
 }
 
 // Download , 文件下载
@@ -90,8 +89,8 @@ func (t *Tracker) Download() gin.HandlerFunc {
 				// 选择合适的存储
 				s, err := t.SelectStorage(c, group)
 				// 反向代理
-				t.HTTPProxy(c, s.Scheme, s.ServerName)
-				c.Abort()
+				t.HTTPProxy(c, s.Scheme, s.ServerAddr)
+				return
 			}
 		}
 		c.Next()
@@ -100,10 +99,6 @@ func (t *Tracker) Download() gin.HandlerFunc {
 
 // Upload , 文件上传
 func (t *Tracker) Upload(c *gin.Context) {
-	var FileCtl struct {
-		FileConfirm bool `json:"file_confirm"`
-	}
-	c.ShouldBindBodyWith(&FileCtl, binding.JSON)
 	// select storage
 	group, err := t.SelectGroupForUPload()
 	if err != nil {
@@ -121,7 +116,7 @@ func (t *Tracker) Upload(c *gin.Context) {
 	c.Request.Header.Add("Go-Dfs-Filename", goDfsFilename)
 
 	// http proxy
-	t.HTTPProxy(c, validStorageServer.Scheme, validStorageServer.ServerName)
+	t.HTTPProxy(c, validStorageServer.Scheme, validStorageServer.ServerAddr)
 	// distribute
 	if c.Writer.Header().Get("Go-Dfs-Upload-Result") == "1" {
 		// get the file ext
@@ -131,7 +126,7 @@ func (t *Tracker) Upload(c *gin.Context) {
 			tempFileListDb, err := pkg.NewLDB(defines.TempFileListDb)
 			if err == nil {
 				ldata, _ := json.Marshal(schema.TempFile{CreateTime: time.Now().Unix()})
-				tempFileListDb.Do(goDfsFilename+goDfsExt, ldata)
+				tempFileListDb.Do(goDfsFilepath+"/"+goDfsFilename+goDfsExt, ldata)
 			}
 		}
 		// recode file list db
@@ -144,13 +139,13 @@ func (t *Tracker) Upload(c *gin.Context) {
 		}
 		StorageServers := t.GetStorages(group)
 		for _, sm := range StorageServers {
-			if sm.ServerName == validStorageServer.ServerName {
+			if sm.ServerAddr == validStorageServer.ServerAddr {
 				continue
 			}
 			go func(sm StorageServer) {
 				syncFileInfo := schema.SyncFileInfo{
-					SrcScheme: validStorageServer.Scheme, SrcHost: validStorageServer.ServerName,
-					DstScheme: sm.Scheme, DstHost: sm.ServerName,
+					Src:      validStorageServer.Scheme + "://" + validStorageServer.ServerAddr,
+					Dst:      sm.Scheme + "://" + sm.ServerAddr,
 					FilePath: goDfsFilepath,
 					FileName: goDfsFilename + goDfsExt,
 					Action:   defines.FileSyncActionAdd,
@@ -176,7 +171,7 @@ func (t *Tracker) FileSyncAndLog(sm StorageServer, syncFileInfo schema.SyncFileI
 		// 写入日志，定时继续同步
 		leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
 	} else if sm.Status == 1 {
-		URL := sm.Scheme + "://" + sm.ServerName
+		URL := sm.Scheme + "://" + sm.ServerAddr
 		res, err := pkg.Helper{}.PostJSON(URL+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
 			// 写入日志，定时继续同步
@@ -188,11 +183,11 @@ func (t *Tracker) FileSyncAndLog(sm StorageServer, syncFileInfo schema.SyncFileI
 		}
 		err = json.Unmarshal(res, &syncRes)
 		if err != nil {
-			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
+			leveldb.Do(syncFileInfo.Dst+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
 			return
 		}
 		if syncRes.Code > 0 {
-			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
+			leveldb.Do(syncFileInfo.Dst+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionAdd, ldbData)
 			return
 		}
 	}
@@ -259,14 +254,14 @@ func (t *Tracker) DeleteSync(file string) (errCode int64) {
 	}
 	for _, s := range group.StorageServers {
 		syncFileInfo := schema.SyncFileInfo{
-			DstScheme: s.Scheme, DstHost: s.ServerName,
+			Dst:      s.Scheme + "://" + s.ServerAddr,
 			FilePath: path.Dir(file),
 			FileName: path.Base(file),
 			Action:   defines.FileSyncActionDelete,
 			Group:    s.Group,
 		}
 		ldbData, _ := json.Marshal(syncFileInfo)
-		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.ServerName+"/sync-file", syncFileInfo, nil, 10*time.Second)
+		res, err := pkg.Helper{}.PostJSON(s.Scheme+"://"+s.ServerAddr+"/sync-file", syncFileInfo, nil, 10*time.Second)
 		if err != nil || len(res) == 0 {
 			leveldb.Do(syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
@@ -276,11 +271,11 @@ func (t *Tracker) DeleteSync(file string) (errCode int64) {
 		}
 		err = json.Unmarshal(res, &syncRes)
 		if err != nil {
-			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(syncFileInfo.Dst+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 		if syncRes.Code > 0 {
-			leveldb.Do(syncFileInfo.DstHost+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
+			leveldb.Do(syncFileInfo.Dst+"-"+syncFileInfo.FileName+"-"+defines.FileSyncActionDelete, ldbData)
 			return
 		}
 	}
@@ -292,17 +287,20 @@ func (t *Tracker) DeleteSync(file string) (errCode int64) {
 func (t *Tracker) HanldeStorageServerReport(c *gin.Context) {
 	// parse request param
 	var params struct {
-		Scheme string `json:"scheme"`
-		Group  string `json:"group"`
-		Port   string `json:"port"`
-		Cap    uint64 `json:"cap"`
+		Scheme      string `json:"scheme"`
+		Group       string `json:"group"`
+		ServiceIP   string `json:"service_ip"`
+		ServicePort string `json:"service_port"`
+		Cap         uint64 `json:"cap"`
 	}
 	c.ShouldBind(&params)
-	host, _, _ := net.SplitHostPort(c.Request.RemoteAddr)
 	// pack
+	if params.ServiceIP == "" || params.ServicePort == "" {
+		return
+	}
 	storageServer := StorageServer{
 		Scheme:     params.Scheme,
-		ServerName: net.JoinHostPort(host, params.Port),
+		ServerAddr: net.JoinHostPort(params.ServiceIP, params.ServicePort),
 		Status:     1,
 		Cap:        params.Cap,
 		Group:      params.Group,
@@ -323,7 +321,7 @@ func (t *Tracker) HanldeStorageServerReport(c *gin.Context) {
 			StorageServers: make(map[string]StorageServer),
 		}
 		// add new member
-		newGroup.StorageServers[storageServer.ServerName] = storageServer
+		newGroup.StorageServers[storageServer.ServerAddr] = storageServer
 		// save to group
 		ldbData, err := json.Marshal(newGroup)
 		if err != nil {
@@ -349,7 +347,7 @@ func (t *Tracker) HanldeStorageServerReport(c *gin.Context) {
 	sort.Slice(caps, func(i, j int) bool { return caps[i] < caps[j] })
 	newGroup.Cap = caps[0]
 	// add new member
-	newGroup.StorageServers[net.JoinHostPort(host, params.Port)] = storageServer
+	newGroup.StorageServers[net.JoinHostPort(params.ServiceIP, params.ServicePort)] = storageServer
 	// save to group
 	ldbData, err := json.Marshal(newGroup)
 	if err != nil {
@@ -411,7 +409,7 @@ func (t *Tracker) StartTrackerCron() {
 					if time.Now().Unix()-s.UpdateTime > 30 {
 						s.Status = 0
 						// update the storage server status
-						g.StorageServers[s.ServerName] = s
+						g.StorageServers[s.ServerAddr] = s
 					} else {
 						validStorages = append(validStorages, s)
 					}
@@ -451,8 +449,8 @@ func (t *Tracker) StartTrackerCron() {
 			}
 			g, err := t.GetGroup(fileSyncInfo.Group)
 			if err == nil {
-				if g.StorageServers[fileSyncInfo.DstHost].Status == 1 && g.StorageServers[fileSyncInfo.SrcHost].Status == 1 {
-					URL := fileSyncInfo.DstScheme + "://" + fileSyncInfo.DstHost
+				if g.StorageServers[fileSyncInfo.Dst].Status == 1 && g.StorageServers[fileSyncInfo.Src].Status == 1 {
+					URL := fileSyncInfo.Dst
 					res, err := pkg.Helper{}.PostJSON(URL+"/sync-file", fileSyncInfo, nil, 10*time.Second)
 					if err != nil || len(res) == 0 {
 						continue
@@ -567,6 +565,9 @@ func (t *Tracker) SelectGroupForUPload() (Group, error) {
 // GetStorages , 获取存储组的存储服务器列表
 func (t *Tracker) GetStorages(group Group) (StorageServers []StorageServer) {
 	for _, v := range group.StorageServers {
+		if v.ServerAddr == ":" {
+			continue
+		}
 		StorageServers = append(StorageServers, v)
 	}
 	if len(StorageServers) <= 0 {
@@ -582,8 +583,7 @@ func (t *Tracker) SelectStorage(c *gin.Context, group Group) (StorageServer, err
 		return StorageServer{}, errors.New("thers is no available storage server")
 	}
 	// calculate ip hash , find the storage server
-	host, _, _ := net.SplitHostPort(c.Request.RemoteAddr)
-	signByte := []byte(host)
+	signByte := []byte(c.ClientIP())
 	hash := md5.New()
 	hash.Write(signByte)
 	md5Hex := hash.Sum(nil)

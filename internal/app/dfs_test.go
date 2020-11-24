@@ -13,19 +13,22 @@ import (
 func TestDfs(t *testing.T) {
 	// 启动tracker
 	config1 := pkg.DsfConfigType{
-		ServerType:  "tracker",
-		HTTPPort:    "9000",
+		ServiceType: "tracker",
+		BindPort:    "9000",
 		DefaultLang: "zh_cn",
 	}
 	config1.Tracker.NodeID = 1
+	config1.Tracker.EnableTempFile = true
 	go Start(&config1)
 	// 启动storage
 	config2 := pkg.DsfConfigType{
-		ServerType:  "storage",
-		HTTPPort:    "9001",
-		DefaultLang: "zh_cn",
+		ServiceType:   "storage",
+		ServiceScheme: "http",
+		ServiceIP:     "127.0.0.1",
+		ServicePort:   "9001",
+		BindPort:      "9001",
+		DefaultLang:   "zh_cn",
 	}
-	config2.Storage.HTTPScheme = "http"
 	config2.Storage.Group = "group1"
 	config2.Storage.StoragePath = "./dfs/1"
 	config2.Storage.Trackers = []string{"http://127.0.0.1:9000"}
@@ -33,11 +36,13 @@ func TestDfs(t *testing.T) {
 
 	// 启动storage
 	config3 := pkg.DsfConfigType{
-		ServerType:  "storage",
-		HTTPPort:    "9002",
-		DefaultLang: "zh_cn",
+		ServiceType:   "storage",
+		ServiceScheme: "http",
+		ServiceIP:     "127.0.0.1",
+		ServicePort:   "9002",
+		BindPort:      "9002",
+		DefaultLang:   "zh_cn",
 	}
-	config3.Storage.HTTPScheme = "http"
 	config3.Storage.Group = "group1"
 	config3.Storage.StoragePath = "./dfs/2"
 	config3.Storage.Trackers = []string{"http://127.0.0.1:9000"}
@@ -53,36 +58,17 @@ func TestUUID(t *testing.T) {
 }
 
 func TestLevelDb(*testing.T) {
-	fmt.Println("**************filelist****************")
-	leveldb, err := pkg.NewLDB(defines.FileListDb)
+	fmt.Println("**************temp-file****************")
+	leveldb3, err := pkg.NewLDB(defines.TempFileListDb)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	iter := leveldb.Db().NewIterator(nil, nil)
-	for iter.Next() {
-		fmt.Printf("%s\n", iter.Key())
+	iter3 := leveldb3.Db().NewIterator(nil, nil)
+	for iter3.Next() {
+		fmt.Printf("%s\n", iter3.Key())
 	}
-	iter.Release()
-	fmt.Println("**************grouplist****************")
-	leveldb1, err := pkg.NewLDB(defines.StorageGroupDb)
-	if err != nil {
-		return
-	}
-	iter1 := leveldb1.Db().NewIterator(nil, nil)
-	for iter1.Next() {
-		fmt.Printf("%s\n", iter1.Key())
-	}
-	iter.Release()
-	fmt.Println("**************synclog****************")
-	leveldb2, err := pkg.NewLDB(defines.FileSyncLogDb)
-	if err != nil {
-		return
-	}
-	iter2 := leveldb2.Db().NewIterator(nil, nil)
-	for iter2.Next() {
-		fmt.Printf("%s\n", iter2.Key())
-	}
-	iter2.Release()
+	iter3.Release()
 }
 
 func TestDiskUsage(t *testing.T) {
