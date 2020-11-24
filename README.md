@@ -34,25 +34,29 @@ go build main.go -o dfs
 ```
 - 2.配置文件
 将 configs/dsf.yml放到dfs可执行文件目录
-```#服务类型tracker or storage
-server_type: "storage"
-#http_port
-http_port: 9000
+```
+#服务类型tracker or storage
+service_type: "storage"
+#对外提供服务的ip和端口信息，用于storage上报自己的ip及端口信息
+service_scheme: "http"
+service_ip: 127.0.0.1
+service_port: 9000
+#bind_port,服务运行的端口
+bind_port: 9000
 #默认语言
 default_lang: zh_cn
 #跟踪服务器的配置
 tracker:
   node_id: 1
+  enable_temp_file: true
 # 存储服务器的配置    
 storage:
-  #http_scheme
-  http_scheme: http
   #存储服务所属的group
   group: group1 
-  #文件大小限制,单位字节
-  file_size_limit: 100000
+  #文件大小限制(byte)
+  file_size_limit: 10000000
   #存储目录
-  storage_path: ./
+  storage_path: ./dfs
   #跟踪服务器，可以有多个
   trackers: 
     - http://127.0.0.1:9000

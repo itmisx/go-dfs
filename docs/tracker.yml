@@ -1,9 +1,10 @@
 #服务类型tracker or storage
-server_type: "tracker"
-#http_port
-http_port: 9000
+service_type: "tracker"
+#bind_port,服务运行的端口
+bind_port: 9000
 #默认语言
 default_lang: zh_cn
 #跟踪服务器的配置
 tracker:
   node_id: 1
+  enable_temp_file: true

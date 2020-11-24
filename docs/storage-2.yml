@@ -1,19 +1,21 @@
 #服务类型tracker or storage
-server_type: "storage"
-#http_port
-http_port: 9000
+service_type: "storage"
+#对外提供服务的ip和端口信息，用于storage上报自己的ip及端口信息
+service_scheme: "http"
+service_ip: 127.0.0.1
+service_port: 9002
+#bind_port,服务运行的端口
+bind_port: 9002
 #默认语言
 default_lang: zh_cn
 # 存储服务器的配置    
 storage:
-  #http_scheme
-  http_scheme: http
   #存储服务所属的group
   group: group1 
   #文件大小限制(byte)
-  file_size_limit: 100000
+  file_size_limit: 10000000
   #存储目录
-  storage_path: ./dfs1
+  storage_path: ./dfs
   #跟踪服务器，可以有多个
   trackers: 
     - http://172.20.0.2:9000
