@@ -578,8 +578,14 @@ func (t *Tracker) GetStorages(group Group) (StorageServers []StorageServer) {
 
 //SelectStorage , 选择存储服务器，根据 ip hash
 func (t *Tracker) SelectStorage(c *gin.Context, group Group) (StorageServer, error) {
-	vsms := t.GetStorages(group)
-	if vsms == nil {
+	var validStorages []StorageServer
+	s := t.GetStorages(group)
+	for _, v := range s {
+		if v.Status == 1 {
+			validStorages = append(validStorages, v)
+		}
+	}
+	if validStorages == nil {
 		return StorageServer{}, errors.New("thers is no available storage server")
 	}
 	// calculate ip hash , find the storage server
@@ -587,8 +593,8 @@ func (t *Tracker) SelectStorage(c *gin.Context, group Group) (StorageServer, err
 	hash := md5.New()
 	hash.Write(signByte)
 	md5Hex := hash.Sum(nil)
-	hashIndex := int(md5Hex[len(md5Hex)-1]) % len(vsms)
-	vsm := vsms[hashIndex]
+	hashIndex := int(md5Hex[len(md5Hex)-1]) % len(validStorages)
+	vsm := validStorages[hashIndex]
 	return vsm, nil
 }
 

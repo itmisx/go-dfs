@@ -37,7 +37,15 @@ func NewStorage() *Storage {
 // Start ,start storage server
 func (s *Storage) Start(serverConfig pkg.DsfConfigType) {
 	s.ServerConfig = serverConfig
-
+	// 自动创建上传目录
+	uploadDir := serverConfig.Storage.StoragePath
+	_, err := os.Stat(uploadDir)
+	if err != nil {
+		err = os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			s.ReportErrorMsg("create root dir error")
+		}
+	}
 	// start gin
 	// before dir sync , only reponse file sync , will not support file download
 	router := gin.Default()
