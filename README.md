@@ -169,8 +169,10 @@ dfs.yml的配置请参考configs/dfs.yml
   code为0表示操作成功，非0表示有错误，msg为错误信息
 - 上传
   - api: /upload
+  - headers:
+    - Content-Type:application/json
   - method: post
-  - 参数:file
+  - 参数:file(值为完整的文件路径)
   - 返回结果示例：
   ```
   {
@@ -183,14 +185,18 @@ dfs.yml的配置请参考configs/dfs.yml
   ```
 - 上传确认
   - api: /confirm
+  - headers:
+    - Content-Type:application/json
   - method: post
-  - 参数:file
+  - 参数:file(值为完整的文件路径)
   - 备注：需要在配置文件中启用enable_temp_file:true
 - 下载
   - api: /完整文件路径
   - method: get
 - 删除
   - api: /delete
+  - headers:
+    - Content-Type:application/json
   - method: post
   - 参数: file(值为完整的文件路径)
   - 返回结果示例:
