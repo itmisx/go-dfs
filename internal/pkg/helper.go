@@ -19,7 +19,12 @@ var Node *snowflake.Node
 func init() {
 	var err error
 	rand.Seed(time.Now().UnixNano())
-	Node, err = snowflake.NewNode(int64(rand.Intn(1024)))
+	if DsfConfig.Tracker.NodeID > 0 {
+		Node, err = snowflake.NewNode(DsfConfig.Tracker.NodeID)
+	} else {
+		Node, err = snowflake.NewNode(int64(rand.Intn(1024)))
+	}
+
 	if err != nil {
 		panic("")
 	}
